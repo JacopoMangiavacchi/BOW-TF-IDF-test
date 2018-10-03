@@ -15,20 +15,34 @@ namespace BOW
 
         static void Main(string[] args)
         {
+            var bow = CreateTFIDFBOW(dataset);
+
+
+
+
+        }
+
+        static string[] Tokenize(string doc)
+        {
+            return doc.ToLower().Split(new char[] { ' ', ',', '.', '?', '!' }, StringSplitOptions.RemoveEmptyEntries);
+        }
+
+        static Dictionary<string, (int, Dictionary<int, int>)> CreateTFIDFBOW(string[] corpus)
+        {
             var bow = new Dictionary<string, (int, Dictionary<int, int>)>();  // token : (freq in dataset, (doc, [freq in doc]))
 
             var docId = 0;
-            foreach (var doc in dataset) 
+            foreach (var doc in corpus)
             {
                 var wordsAlreadyInDoc = new List<string>();
 
-                foreach(var word in doc.ToLower().Split(new char[] { ' ', ',', '.', '?', '!' }, StringSplitOptions.RemoveEmptyEntries)) 
+                foreach (var word in Tokenize(doc))
                 {
-                    if(bow.ContainsKey(word))
+                    if (bow.ContainsKey(word))
                     {
                         var x = bow[word];
                         x.Item1++;
-                        if(wordsAlreadyInDoc.Contains(word))
+                        if (wordsAlreadyInDoc.Contains(word))
                         {
                             x.Item2[docId] += 1;
                         }
@@ -50,11 +64,18 @@ namespace BOW
                 docId++;
             }
 
-            foreach(KeyValuePair<string, (int, Dictionary<int, int>)> kvp in bow)
+            dumpInternalBow(bow);
+
+            return bow;
+        }
+
+        static void dumpInternalBow(Dictionary<string, (int, Dictionary<int, int>)> bow)
+        {
+            foreach (KeyValuePair<string, (int, Dictionary<int, int>)> kvp in bow)
             {
                 Console.Write($"{kvp.Key} : freqInDataset={kvp.Value.Item1} ");
 
-                foreach(KeyValuePair<int, int> kvp2 in kvp.Value.Item2)
+                foreach (KeyValuePair<int, int> kvp2 in kvp.Value.Item2)
                 {
                     Console.Write($"freqInDocs{kvp2.Key}={kvp2.Value} ");
                 }
