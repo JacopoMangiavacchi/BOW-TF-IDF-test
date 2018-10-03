@@ -1,8 +1,40 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace BOW
 {
+    public interface ITransform<TIn, TOut>
+    {
+        TOut Transform(TIn input);
+    }
+
+    public interface IMetadata<TOut>
+    {
+        TOut GetMetadata();
+    }
+
+    public class Tokenizer : ITransform<string[], string[][]> 
+    {
+        private string[] Tokenize(string doc)
+        {
+            return doc.ToLower().Split(new char[] { ' ', ',', '.', '?', '!' }, StringSplitOptions.RemoveEmptyEntries);
+        }
+
+        public string[][] Transform(string[] input)
+        {
+            return input.Select(d => Tokenize(d)).ToArray();
+        }
+    }
+
+
+    //public class TFIDFBOW : ITransform<TIn, TOut>
+    //{
+
+    //}
+
+
+
     class Program
     {
         static string[] dataset = { "Well done! You really made a great job. Really well done!!",
@@ -15,6 +47,11 @@ namespace BOW
 
         static void Main(string[] args)
         {
+            var t = new Tokenizer();
+            var tokens = t.Transform(dataset);
+
+
+
             var bow = CreateTFIDFBOW(dataset);
 
 
