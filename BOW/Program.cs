@@ -14,16 +14,16 @@ namespace BOW
         TOut GetMetadata();
     }
 
-    public class Tokenizer : ITransform<string[], string[][]> 
+    public class Tokenizer : ITransform<IEnumerable<string>, IEnumerable<IEnumerable<string>>> 
     {
-        private string[] Tokenize(string doc)
+        private IEnumerable<string> Tokenize(string doc)
         {
             return doc.ToLower().Split(new char[] { ' ', ',', '.', '?', '!' }, StringSplitOptions.RemoveEmptyEntries);
         }
 
-        public string[][] Transform(string[] input)
+        public IEnumerable<IEnumerable<string>> Transform(IEnumerable<string> input)
         {
-            return input.Select(d => Tokenize(d)).ToArray();
+            return input.Select(d => Tokenize(d));
         }
     }
 
