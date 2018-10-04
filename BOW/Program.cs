@@ -28,10 +28,55 @@ namespace BOW
     }
 
 
-    //public class TFIDFBOW : ITransform<TIn, TOut>
-    //{
+    public class TFIDFBOW : ITransform<IEnumerable<IEnumerable<string>>, IEnumerable<IEnumerable<float>>> , IMetadata<Dictionary<string, int>>
+    {
+        private Dictionary<string, (int, Dictionary<int, int>)> bow = new Dictionary<string, (int, Dictionary<int, int>)>();  // token : (freq in dataset, (doc, [freq in doc]))
 
-    //}
+        public IEnumerable<IEnumerable<float>> Transform(IEnumerable<IEnumerable<string>> input)
+        {
+            bow = new Dictionary<string, (int, Dictionary<int, int>)>();  // token : (freq in dataset, (doc, [freq in doc]))
+
+            var docId = 0;
+            foreach (var doc in input)
+            {
+                var wordsAlreadyInDoc = new List<string>();
+
+                foreach (var word in doc)
+                {
+                    if (bow.ContainsKey(word))
+                    {
+                        var x = bow[word];
+                        x.Item1++;
+                        if (wordsAlreadyInDoc.Contains(word))
+                        {
+                            x.Item2[docId] += 1;
+                        }
+                        else
+                        {
+                            x.Item2[docId] = 1;
+                        }
+                        bow[word] = x;
+                    }
+                    else
+                    {
+                        bow[word] = (1, new Dictionary<int, int>() { { docId, 1 } });
+                    }
+
+
+                    wordsAlreadyInDoc.Add(word);
+                }
+
+                docId++;
+            }
+
+            return null;
+        }
+
+        public Dictionary<string, int> GetMetadata() // token : freq in dataset
+        {
+            return bow.ToDictionary(arg => arg.Key, arg => arg.Value.Item1);
+        }
+    }
 
 
 
