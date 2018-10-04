@@ -78,7 +78,7 @@ namespace BOW
             //Create Features Vectors with BOW TF-IDF values
             var vectors = new List<List<float>>();
             docId = 0;
-            foreach (var doc in corpusTokenized)
+            foreach(var doc in corpusTokenized)
             {
                 vectors.Add(new List<float>());
                 foreach(KeyValuePair<string, (int, Dictionary<int, int>)> bowToken in bow)
@@ -99,13 +99,7 @@ namespace BOW
             //Normalize Vectors using L2
             foreach(var vector in vectors) 
             {
-                float sumSquared = 0;
-                foreach (var value in vector)
-                {
-                    sumSquared += value * value;
-                }
-
-                float SqrtSumSquared = (float)Math.Sqrt(sumSquared);
+                float SqrtSumSquared = (float)Math.Sqrt(vector.Aggregate((sum, value) => sum + (value * value)));
 
                 for (int i = 0; i < vector.Count(); i++)
                 {
