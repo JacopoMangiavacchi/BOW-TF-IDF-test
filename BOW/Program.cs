@@ -38,12 +38,12 @@ namespace BOW
             return docFreq * idf;
         }
 
-        public IEnumerable<IEnumerable<float>> Transform(IEnumerable<IEnumerable<string>> tokens)
+        public IEnumerable<IEnumerable<float>> Transform(IEnumerable<IEnumerable<string>> corpusTokenized)
         {
+            //Create Temp BOW Dictionary with word frequency in dataset and word frequency per document
             bow = new Dictionary<string, (int, Dictionary<int, int>)>();  // token : (freq in dataset, (doc, [freq in doc]))
-
             var docId = 0;
-            foreach (var doc in tokens)
+            foreach (var doc in corpusTokenized)
             {
                 var wordsAlreadyInDoc = new List<string>();
 
@@ -75,10 +75,10 @@ namespace BOW
                 docId++;
             }
 
+            //Create Features Vectors with BOW TF-IDF values
             var vectors = new List<List<float>>();
-
             docId = 0;
-            foreach (var doc in tokens)
+            foreach (var doc in corpusTokenized)
             {
                 vectors.Add(new List<float>());
                 foreach(KeyValuePair<string, (int, Dictionary<int, int>)> bowToken in bow)
@@ -87,7 +87,7 @@ namespace BOW
 
                     if(doc.Contains(bowToken.Key)) 
                     {
-                        tfidf = TFIDF(tokens.Count(), bowToken.Value.Item1, bowToken.Value.Item2[docId]);
+                        tfidf = TFIDF(corpusTokenized.Count(), bowToken.Value.Item1, bowToken.Value.Item2[docId]);
                     }
 
                     vectors.Last().Add(tfidf);
@@ -96,6 +96,24 @@ namespace BOW
                 docId++;
             }
                 
+            //Normalize Vectors using L2
+            foreach(var vector in vectors) 
+            {
+                float sumSquared = 0;
+                foreach (var value in vector)
+                {
+                    sumSquared += value * value;
+                }
+
+                float SqrtSumSquared = (float)Math.Sqrt(sumSquared);
+
+                for (int i = 0; i < vector.Count(); i++)
+                {
+                    vector[i] /= SqrtSumSquared;
+                }
+
+            }
+
             return vectors;
         }
 
