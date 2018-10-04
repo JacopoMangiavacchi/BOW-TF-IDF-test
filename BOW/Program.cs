@@ -6,7 +6,7 @@ namespace BOW
 {
     public interface ITransform<TIn, TOut>
     {
-        TOut Transform(TIn input);
+        TOut Transform(TIn corpus);
     }
 
     public interface IMetadata<TOut>
@@ -21,9 +21,9 @@ namespace BOW
             return doc.ToLower().Split(new char[] { ' ', ',', '.', '?', '!' }, StringSplitOptions.RemoveEmptyEntries);
         }
 
-        public IEnumerable<IEnumerable<string>> Transform(IEnumerable<string> input)
+        public IEnumerable<IEnumerable<string>> Transform(IEnumerable<string> corpus)
         {
-            return input.Select(d => Tokenize(d));
+            return corpus.Select(d => Tokenize(d));
         }
     }
 
@@ -32,12 +32,18 @@ namespace BOW
     {
         private Dictionary<string, (int, Dictionary<int, int>)> bow = new Dictionary<string, (int, Dictionary<int, int>)>();  // token : (freq in dataset, (doc, [freq in doc]))
 
-        public IEnumerable<IEnumerable<float>> Transform(IEnumerable<IEnumerable<string>> input)
+        static float TFIDF(float numberOfDocs, float datasetFreq, float docFreq)
+        {
+            float idf = (float)Math.Log(numberOfDocs / ((float)1 + docFreq));
+            return docFreq * idf;
+        }
+
+        public IEnumerable<IEnumerable<float>> Transform(IEnumerable<IEnumerable<string>> tokens)
         {
             bow = new Dictionary<string, (int, Dictionary<int, int>)>();  // token : (freq in dataset, (doc, [freq in doc]))
 
             var docId = 0;
-            foreach (var doc in input)
+            foreach (var doc in tokens)
             {
                 var wordsAlreadyInDoc = new List<string>();
 
@@ -69,7 +75,28 @@ namespace BOW
                 docId++;
             }
 
-            return null;
+            var vectors = new List<List<float>>();
+
+            docId = 0;
+            foreach (var doc in tokens)
+            {
+                vectors.Add(new List<float>());
+                foreach(KeyValuePair<string, (int, Dictionary<int, int>)> bowToken in bow)
+                {
+                    float tfidf = 0;
+
+                    if(doc.Contains(bowToken.Key)) 
+                    {
+                        tfidf = TFIDF(tokens.Count(), bowToken.Value.Item1, bowToken.Value.Item2[docId]);
+                    }
+
+                    vectors.Last().Add(tfidf);
+                }
+
+                docId++;
+            }
+                
+            return vectors;
         }
 
         public Dictionary<string, int> GetMetadata() // token : freq in dataset
@@ -92,78 +119,15 @@ namespace BOW
 
         static void Main(string[] args)
         {
-            var t = new Tokenizer();
-            var tokens = t.Transform(dataset);
+            var tokenizer = new Tokenizer();
+            var tokens = tokenizer.Transform(dataset);
 
+            var bower = new TFIDFBOW();
+            var vectors = bower.Transform(tokens);
+            var bow = bower.GetMetadata();
 
-
-            var bow = CreateTFIDFBOW(dataset);
-
-
-
-
-        }
-
-        static string[] Tokenize(string doc)
-        {
-            return doc.ToLower().Split(new char[] { ' ', ',', '.', '?', '!' }, StringSplitOptions.RemoveEmptyEntries);
-        }
-
-        static Dictionary<string, (int, Dictionary<int, int>)> CreateTFIDFBOW(string[] corpus)
-        {
-            var bow = new Dictionary<string, (int, Dictionary<int, int>)>();  // token : (freq in dataset, (doc, [freq in doc]))
-
-            var docId = 0;
-            foreach (var doc in corpus)
-            {
-                var wordsAlreadyInDoc = new List<string>();
-
-                foreach (var word in Tokenize(doc))
-                {
-                    if (bow.ContainsKey(word))
-                    {
-                        var x = bow[word];
-                        x.Item1++;
-                        if (wordsAlreadyInDoc.Contains(word))
-                        {
-                            x.Item2[docId] += 1;
-                        }
-                        else
-                        {
-                            x.Item2[docId] = 1;
-                        }
-                        bow[word] = x;
-                    }
-                    else
-                    {
-                        bow[word] = (1, new Dictionary<int, int>() { { docId, 1 } });
-                    }
-
-
-                    wordsAlreadyInDoc.Add(word);
-                }
-
-                docId++;
-            }
-
-            dumpInternalBow(bow);
-
-            return bow;
-        }
-
-        static void dumpInternalBow(Dictionary<string, (int, Dictionary<int, int>)> bow)
-        {
-            foreach (KeyValuePair<string, (int, Dictionary<int, int>)> kvp in bow)
-            {
-                Console.Write($"{kvp.Key} : freqInDataset={kvp.Value.Item1} ");
-
-                foreach (KeyValuePair<int, int> kvp2 in kvp.Value.Item2)
-                {
-                    Console.Write($"freqInDocs{kvp2.Key}={kvp2.Value} ");
-                }
-
-                Console.WriteLine();
-            }
+            Console.WriteLine(vectors);
+            Console.WriteLine(bow);
         }
     }
 }
